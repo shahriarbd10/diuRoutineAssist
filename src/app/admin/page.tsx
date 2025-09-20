@@ -1,3 +1,4 @@
+// src/app/admin/page.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -8,6 +9,8 @@ import {
   UploadCloud,
   Trash2,
   FileDown,
+  CheckCircle2,
+  X as XIcon,
 } from "lucide-react";
 import { parseAny } from "@/lib/parse";
 import { parseTeacherInfo, TeacherInfo } from "@/lib/teachers";
@@ -19,17 +22,6 @@ import {
   uc,
   ALL_DAYS,
 } from "@/lib/routine";
-
-import {
-  savePublishedRoutine,
-  savePublishedTIF,
-  loadPublishedRoutine,
-  loadPublishedTIF,
-  clearPublishedRoutine,
-  clearPublishedTIF,
-  type Published,
-} from "@/lib/publish";
-
 import { StudentSchedule } from "@/components/ScheduleTable";
 import TeacherEnd from "@/components/TeacherEnd";
 import EmptyRoomTab from "@/components/EmptyRoomTab";
@@ -41,6 +33,8 @@ import { exportCSV, exportStudentPDFStructured } from "@/lib/exporters";
 type DraftRoutine = { fileName: string; rows: ClassRow[] } | null;
 type DraftTIF = { fileName: string; list: TeacherInfo[] } | null;
 type Tab = "student" | "teacher" | "rooms";
+
+type PublishedFlags = { routine?: boolean; tif?: boolean };
 
 /* ---------------------- helpers: normalize parseAny ---------------------- */
 
@@ -56,16 +50,19 @@ function asRows(maybe: any): ClassRow[] {
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>("student");
 
-  // drafts (not live until you publish)
+  // drafts (not live until publish)
   const [draftRoutine, setDraftRoutine] = useState<DraftRoutine>(null);
   const [draftTif, setDraftTif] = useState<DraftTIF>(null);
 
-  // currently published (for fallback preview or comparison)
-  const [pubRoutine, setPubRoutine] =
-    useState<Published<ClassRow[]> | null>(null);
-  const [pubTif, setPubTif] = useState<Published<TeacherInfo[]> | null>(null);
+  // published snapshots (fetched from server for fallback preview/meta)
+  const [pubFlags, setPubFlags] = useState<PublishedFlags>({});
+  const [pubRoutineMeta, setPubRoutineMeta] = useState<{ fileName?: string }>();
+  const [pubTifMeta, setPubTifMeta] = useState<{ fileName?: string }>();
 
-  // student-style filters for the Student tab (same UX as portals)
+  // working rows used in Student/Teacher/Rooms preview section
+  const [publishedRows, setPublishedRows] = useState<ClassRow[]>([]);
+
+  // student filters
   const [fDay, setFDay] = useState<string>("");
   const [fBatch, setFBatch] = useState<string>("");
   const [fSlot, setFSlot] = useState<string>("");
@@ -74,24 +71,52 @@ export default function AdminPage() {
   const [erDay, setErDay] = useState<string>("");
   const [erSlot, setErSlot] = useState<string>("");
 
-  // preview uses either the draft or the published routine
-  const workingRows = draftRoutine?.rows || pubRoutine?.data || [];
+  // success modal
+  const [showSuccess, setShowSuccess] = useState(false);
 
-  // When a TIF draft is selected via the top uploader, temporarily “feed”
-  // it into TeacherEnd by storing at the same key TeacherEnd reads in
-  // read-only mode. We'll restore the previous value on cleanup.
+  // TeacherEnd preview TIF (use localStorage seed key)
   const TIF_LS_KEY = "ra_tif_published_v1";
   const tifBackupRef = useRef<string | null>(null);
 
+  /* -------------------------- initial published data -------------------------- */
+
   useEffect(() => {
-    setPubRoutine(loadPublishedRoutine());
-    setPubTif(loadPublishedTIF());
+    (async () => {
+      const flags: PublishedFlags = await fetch("/api/publish", { cache: "no-store" })
+        .then((r) => r.json())
+        .catch(() => ({}));
+      setPubFlags(flags || {});
+
+      // routine
+      if (flags?.routine) {
+        const j = await fetch("/api/published/routine", { cache: "no-store" }).then((r) =>
+          r.ok ? r.json() : null
+        );
+        if (j?.data) {
+          setPublishedRows(j.data as ClassRow[]);
+          setPubRoutineMeta({ fileName: j?.meta?.fileName });
+        }
+      }
+
+      // tif
+      if (flags?.tif) {
+        const t = await fetch("/api/published/tif", { cache: "no-store" }).then((r) =>
+          r.ok ? r.json() : null
+        );
+        if (t?.data) {
+          // cache for TeacherEnd read-only consumption
+          localStorage.setItem(TIF_LS_KEY, JSON.stringify(t));
+          setPubTifMeta({ fileName: t?.meta?.fileName });
+        }
+      }
+    })();
   }, []);
 
-  // keep Teacher tab in sync with top TIF uploader for preview
+  /* -------------------------- TeacherEnd TIF live preview -------------------------- */
+
+  // When an admin uploads a TIF draft, temporarily feed it to TeacherEnd via LS.
   useEffect(() => {
     if (draftTif) {
-      // backup once
       if (tifBackupRef.current === null) {
         tifBackupRef.current = localStorage.getItem(TIF_LS_KEY);
       }
@@ -101,7 +126,6 @@ export default function AdminPage() {
       });
       localStorage.setItem(TIF_LS_KEY, payload);
     } else {
-      // restore if we had backed up
       if (tifBackupRef.current !== null) {
         if (tifBackupRef.current === "null") localStorage.removeItem(TIF_LS_KEY);
         else localStorage.setItem(TIF_LS_KEY, tifBackupRef.current);
@@ -112,7 +136,6 @@ export default function AdminPage() {
 
   useEffect(() => {
     return () => {
-      // on unmount, restore original TIF if we modified it
       if (tifBackupRef.current !== null) {
         if (tifBackupRef.current === "null") localStorage.removeItem(TIF_LS_KEY);
         else localStorage.setItem(TIF_LS_KEY, tifBackupRef.current);
@@ -121,6 +144,9 @@ export default function AdminPage() {
   }, []);
 
   /* --------------------------------- data -------------------------------- */
+
+  // rows shown in preview tabs = draft if present, else published from server
+  const workingRows = draftRoutine?.rows ?? publishedRows;
 
   const daysList = useMemo(() => {
     const order: string[] = [];
@@ -174,38 +200,100 @@ export default function AdminPage() {
   const canPublish = !!(draftRoutine || draftTif);
 
   const publishBoth = async () => {
-    if (draftRoutine) savePublishedRoutine(draftRoutine.rows, { fileName: draftRoutine.fileName });
-    if (draftTif) savePublishedTIF(draftTif.list, { fileName: draftTif.fileName });
-
-    // also write to /public/published via API so portals can fetch without 404s
-    try {
-      await fetch("/api/publish", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          routine: draftRoutine?.rows ?? pubRoutine?.data ?? [],
-          tif: draftTif?.list ?? pubTif?.data ?? [],
-          meta: {
-            routineFile: draftRoutine?.fileName ?? pubRoutine?.meta?.fileName ?? "",
-            tifFile: draftTif?.fileName ?? pubTif?.meta?.fileName ?? "",
-          },
-        }),
-      });
-    } catch (e) {
-      console.warn("Publishing to /api/publish failed, localStorage updated only.", e);
+    // Require BOTH to avoid half-published state (you can relax this if you prefer)
+    if (!draftRoutine && !pubFlags.routine) {
+      alert("Please upload a Routine file before publishing.");
+      return;
+    }
+    if (!draftTif && !pubFlags.tif) {
+      alert("Please upload a TIF file before publishing.");
+      return;
     }
 
-    // refresh published snapshots
-    setPubRoutine(loadPublishedRoutine());
-    setPubTif(loadPublishedTIF());
+    const payload: any = {};
+
+    // Routine: prefer draft; else keep published rows
+    payload.routine = draftRoutine ? draftRoutine.rows : publishedRows;
+    payload.routineMeta = {
+      fileName: draftRoutine?.fileName || pubRoutineMeta?.fileName || "",
+      publishedAt: new Date().toISOString(),
+    };
+
+    // TIF: prefer draft; else keep published (if exists)
+    let tifData: any[] | undefined;
+    if (draftTif) tifData = draftTif.list;
+    else {
+      const cached = localStorage.getItem(TIF_LS_KEY);
+      if (cached) {
+        const j = JSON.parse(cached);
+        if (Array.isArray(j?.data)) tifData = j.data;
+      }
+    }
+    if (!tifData || !tifData.length) {
+      alert("Please upload a TIF file before publishing.");
+      return;
+    }
+    payload.tif = tifData;
+    payload.tifMeta = {
+      fileName: draftTif?.fileName || pubTifMeta?.fileName || "",
+      publishedAt: new Date().toISOString(),
+    };
+
+    const res = await fetch("/api/publish", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      alert("Failed to publish. Please try again.");
+      return;
+    }
+
+    // refresh flags + published preview
+    const flags: PublishedFlags = await fetch("/api/publish", { cache: "no-store" })
+      .then((r) => r.json())
+      .catch(() => ({}));
+    setPubFlags(flags || {});
+
+    if (flags?.routine) {
+      const j = await fetch("/api/published/routine", { cache: "no-store" }).then((r) =>
+        r.ok ? r.json() : null
+      );
+      if (j?.data) {
+        setPublishedRows(j.data as ClassRow[]);
+        setPubRoutineMeta({ fileName: j?.meta?.fileName });
+      }
+    }
+    if (flags?.tif) {
+      const t = await fetch("/api/published/tif", { cache: "no-store" }).then((r) =>
+        r.ok ? r.json() : null
+      );
+      if (t?.data) {
+        localStorage.setItem(TIF_LS_KEY, JSON.stringify(t));
+        setPubTifMeta({ fileName: t?.meta?.fileName });
+      }
+    }
+
+    // clear drafts after successful publish
+    setDraftRoutine(null);
+    setDraftTif(null);
+
+    // success modal
+    setShowSuccess(true);
   };
 
   const clearAll = async () => {
-    clearPublishedRoutine();
-    clearPublishedTIF();
-    try { await fetch("/api/publish", { method: "DELETE" }); } catch {}
-    setPubRoutine(null);
-    setPubTif(null);
+    const ok = confirm("This will remove the cloud-published Routine and TIF. Continue?");
+    if (!ok) return;
+    const res = await fetch("/api/publish", { method: "DELETE" });
+    if (!res.ok) return alert("Failed to unpublish.");
+    setPublishedRows([]);
+    setPubFlags({});
+    setPubRoutineMeta(undefined);
+    setPubTifMeta(undefined);
+    localStorage.removeItem(TIF_LS_KEY);
+    alert("Unpublished from cloud.");
   };
 
   /* --------------------------------- render -------------------------------- */
@@ -216,7 +304,7 @@ export default function AdminPage() {
         <div>
           <h1 className="text-2xl font-semibold">Routine Admin</h1>
           <p className="text-sm text-neutral-600">
-            Upload & preview in the same tabs students/teachers see, then publish.
+            Upload & preview (below) exactly like students/teachers see — then publish to cloud.
           </p>
         </div>
         <form action="/admin/login" method="get">
@@ -239,9 +327,9 @@ export default function AdminPage() {
               <span className="text-xs text-neutral-500">
                 Draft: {draftRoutine.fileName} · {draftRoutine.rows.length} rows
               </span>
-            ) : pubRoutine ? (
+            ) : pubFlags.routine ? (
               <span className="text-xs text-neutral-500">
-                Published: {pubRoutine.meta?.fileName || "—"} · {pubRoutine.data.length} rows
+                Published: {pubRoutineMeta?.fileName || "—"}
               </span>
             ) : (
               <span className="text-xs text-neutral-500">No routine published</span>
@@ -280,7 +368,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* TIF (Admin can also import inside Teacher tab; top uploader is optional) */}
+        {/* TIF */}
         <div className="rounded-2xl border bg-white p-4">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">Teacher Info (TIF) — CSV/XLSX</h2>
@@ -288,9 +376,9 @@ export default function AdminPage() {
               <span className="text-xs text-neutral-500">
                 Draft: {draftTif.fileName} · {draftTif.list.length} records
               </span>
-            ) : pubTif ? (
+            ) : pubFlags.tif ? (
               <span className="text-xs text-neutral-500">
-                Published: {pubTif.meta?.fileName || "—"} · {pubTif.data.length} records
+                Published: {pubTifMeta?.fileName || "—"}
               </span>
             ) : (
               <span className="text-xs text-neutral-500">No TIF published</span>
@@ -418,10 +506,8 @@ export default function AdminPage() {
           </>
         )}
 
-        {/* TEACHER END (Admin can upload TIF here too) */}
-        {tab === "teacher" && (
-          <TeacherEnd rows={workingRows} allowTifImport={true} />
-        )}
+        {/* TEACHER END (Admin can import TIF here too via top uploader preview) */}
+        {tab === "teacher" && <TeacherEnd rows={workingRows} allowTifImport={true} />}
 
         {/* EMPTY ROOMS */}
         {tab === "rooms" && (
@@ -439,7 +525,7 @@ export default function AdminPage() {
       <section className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <button
-            disabled={!canPublish}
+            disabled={!canPublish && !pubFlags.routine && !pubFlags.tif}
             onClick={publishBoth}
             className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
           >
@@ -457,6 +543,43 @@ export default function AdminPage() {
           <Trash2 size={16} /> Unpublish / Delete Previous
         </button>
       </section>
+
+      {/* Success Modal */}
+      {showSuccess && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-full bg-green-100 text-green-700">
+                <CheckCircle2 size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Published successfully</h3>
+                <p className="text-xs text-neutral-500">Students & Teachers will see the new data now.</p>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-lg border bg-neutral-50 p-3 text-sm">
+              <div>
+                <span className="font-medium">Routine:</span>{" "}
+                {draftRoutine?.fileName || pubRoutineMeta?.fileName || "—"}
+              </div>
+              <div className="mt-1">
+                <span className="font-medium">TIF:</span>{" "}
+                {draftTif?.fileName || pubTifMeta?.fileName || "—"}
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setShowSuccess(false)}
+                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm hover:bg-neutral-50"
+              >
+                <XIcon size={16} /> Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,32 +1,32 @@
+// src/app/api/publish/route.ts
 import { NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
+import { exists, saveJSON, removeJSON, ROUTINE_KEY, TIF_KEY } from "@/lib/cloudStorage";
 
-const dir = path.join(process.cwd(), "public", "published");
+export const dynamic = "force-dynamic";
 
+// health/check (do files exist?)
+export async function GET() {
+  const [routine, tif] = await Promise.all([exists(ROUTINE_KEY), exists(TIF_KEY)]);
+  return NextResponse.json({ routine, tif });
+}
+
+// publish both (or either) — called by Admin “Publish”
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
-  const { routine, tif, meta } = body || {};
-  await fs.mkdir(dir, { recursive: true });
+  const { routine, routineMeta, tif, tifMeta } = body ?? {};
 
-  const writes: Promise<any>[] = [];
-  const stamp = new Date().toISOString();
-
-  if (Array.isArray(routine)) {
-    const payload = { data: routine, meta: { ...meta, at: stamp }, at: stamp };
-    writes.push(fs.writeFile(path.join(dir, "routine.json"), JSON.stringify(payload, null, 2), "utf8"));
+  // you can publish either one, but admin UI usually sends both
+  if (routine) {
+    await saveJSON(ROUTINE_KEY, { data: routine, meta: routineMeta ?? {} });
   }
-  if (Array.isArray(tif)) {
-    const payload = { data: tif, meta: { ...meta, at: stamp }, at: stamp };
-    writes.push(fs.writeFile(path.join(dir, "tif.json"), JSON.stringify(payload, null, 2), "utf8"));
+  if (tif) {
+    await saveJSON(TIF_KEY, { data: tif, meta: tifMeta ?? {} });
   }
-
-  await Promise.all(writes);
   return NextResponse.json({ ok: true });
 }
 
+// clear both
 export async function DELETE() {
-  try { await fs.unlink(path.join(dir, "routine.json")); } catch {}
-  try { await fs.unlink(path.join(dir, "tif.json")); } catch {}
+  await Promise.all([removeJSON(ROUTINE_KEY), removeJSON(TIF_KEY)]);
   return NextResponse.json({ ok: true });
 }

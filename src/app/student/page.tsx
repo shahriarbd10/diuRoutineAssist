@@ -8,9 +8,13 @@ import TeacherEnd from "@/components/TeacherEnd";
 import EmptyRoomTab from "@/components/EmptyRoomTab";
 import { DayPicker, SlotPicker, TextInput } from "@/components/Filters";
 import {
-  ClassRow, DAY_NAMES, SLOTS, uc, isRoutineEntry, ALL_DAYS,
+  ClassRow,
+  DAY_NAMES,
+  SLOTS,
+  uc,
+  isRoutineEntry,
+  ALL_DAYS,
 } from "@/lib/routine";
-import { loadPublishedRoutine, loadPublishedTIF } from "@/lib/publish";
 
 type Tab = "student" | "teacher" | "rooms";
 
@@ -38,30 +42,34 @@ export default function StudentPage() {
 
   useEffect(() => {
     (async () => {
-      // Ask server if published files exist, then fetch only if present.
+      // Ask server if published files exist
       const exist = await fetchJSON<{ routine?: boolean; tif?: boolean }>("/api/publish");
-      let loaded = false;
 
+      // Routine
       if (exist?.routine) {
-        const j = await fetchJSON<{ data: ClassRow[]; meta?: any }>("/published/routine.json");
+        const j = await fetchJSON<{ data: ClassRow[]; meta?: any }>("/api/published/routine");
         if (Array.isArray(j?.data)) {
           setRows(j!.data);
-          setStatus(`Loaded published routine (${j?.meta?.routineFile || "published data"})`);
-          loaded = true;
+          setStatus(
+            j?.meta?.fileName
+              ? `Loaded published routine (${j.meta.fileName})`
+              : "Loaded published routine"
+          );
+        } else {
+          setRows([]);
+          setStatus("No published routine");
         }
-      }
-      if (!loaded) {
-        const pub = loadPublishedRoutine();
-        setRows(pub?.data || []);
-        setStatus(pub ? `Loaded published routine (${pub?.meta?.fileName || "published data"})` : "No published routine");
+      } else {
+        setRows([]);
+        setStatus("No published routine");
       }
 
+      // TIF (cache to LS for TeacherEnd)
       if (exist?.tif) {
-        const t = await fetchJSON("/published/tif.json");
+        const t = await fetchJSON("/api/published/tif");
         if (t?.data) localStorage.setItem("ra_tif_published_v1", JSON.stringify(t));
       } else {
-        const lt = loadPublishedTIF();
-        if (lt?.data) localStorage.setItem("ra_tif_published_v1", JSON.stringify(lt));
+        localStorage.removeItem("ra_tif_published_v1");
       }
     })();
   }, []);
@@ -170,7 +178,7 @@ export default function StudentPage() {
           </>
         )}
 
-        {/* TEACHER END (read-only TIF) */}
+        {/* TEACHER END (read-only TIF from published, cached in LS) */}
         {tab === "teacher" && <TeacherEnd rows={rows} allowTifImport={false} />}
 
         {/* EMPTY ROOMS */}

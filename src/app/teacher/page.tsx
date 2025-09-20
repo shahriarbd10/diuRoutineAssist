@@ -8,18 +8,30 @@ import EmptyRoomTab from "@/components/EmptyRoomTab";
 import { DayPicker, SlotPicker, TextInput } from "@/components/Filters";
 import { Download, FileDown } from "lucide-react";
 import {
-  ClassRow, DAY_NAMES, SLOTS, uc, isRoutineEntry, ALL_DAYS,
+  ClassRow,
+  DAY_NAMES,
+  SLOTS,
+  uc,
+  isRoutineEntry,
+  ALL_DAYS,
 } from "@/lib/routine";
-import { loadPublishedRoutine, loadPublishedTIF } from "@/lib/publish";
 
 type Tab = "teacher" | "student" | "rooms";
+
+async function fetchJSON<T = any>(url: string): Promise<T | null> {
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (res.ok) return (await res.json()) as T;
+  } catch {}
+  return null;
+}
 
 export default function TeacherPage() {
   const [tab, setTab] = useState<Tab>("teacher");
   const [rows, setRows] = useState<ClassRow[]>([]);
   const [status, setStatus] = useState("");
 
-  // student filters
+  // student filters (used in the Student tab within Teacher portal)
   const [fDay, setFDay] = useState<string>("");
   const [fBatch, setFBatch] = useState<string>("");
   const [fSlot, setFSlot] = useState<string>("");
@@ -29,12 +41,37 @@ export default function TeacherPage() {
   const [erSlot, setErSlot] = useState<string>("");
 
   useEffect(() => {
-    const pub = loadPublishedRoutine();
-    setRows(pub?.data || []);
-    setStatus(pub ? `Loaded published routine (${pub?.meta?.fileName || "published data"})` : "No published routine");
+    (async () => {
+      // Ask server if published files exist
+      const exist = await fetchJSON<{ routine?: boolean; tif?: boolean }>("/api/publish");
 
-    const t = loadPublishedTIF();
-    if (t?.data) localStorage.setItem("ra_tif_published_v1", JSON.stringify(t));
+      // Routine
+      if (exist?.routine) {
+        const j = await fetchJSON<{ data: ClassRow[]; meta?: any }>("/api/published/routine");
+        if (Array.isArray(j?.data)) {
+          setRows(j!.data);
+          setStatus(
+            j?.meta?.fileName
+              ? `Loaded published routine (${j.meta.fileName})`
+              : "Loaded published routine"
+          );
+        } else {
+          setRows([]);
+          setStatus("No published routine");
+        }
+      } else {
+        setRows([]);
+        setStatus("No published routine");
+      }
+
+      // TIF (cache to LS for TeacherEnd; read-only)
+      if (exist?.tif) {
+        const t = await fetchJSON("/api/published/tif");
+        if (t?.data) localStorage.setItem("ra_tif_published_v1", JSON.stringify(t));
+      } else {
+        localStorage.removeItem("ra_tif_published_v1");
+      }
+    })();
   }, []);
 
   const daysList = useMemo(() => {
@@ -69,10 +106,10 @@ export default function TeacherPage() {
           <TabBtn active={tab === "rooms"}   onClick={() => setTab("rooms")}   label="Empty Rooms" />
         </div>
 
-        {/* TEACHER END (default) */}
+        {/* TEACHER END (default) - no TIF upload here */}
         {tab === "teacher" && <TeacherEnd rows={rows} allowTifImport={false} />}
 
-        {/* STUDENT END */}
+        {/* STUDENT END (read-only filters & exports) */}
         {tab === "student" && (
           <>
             <div className="grid gap-4 md:grid-cols-4">
