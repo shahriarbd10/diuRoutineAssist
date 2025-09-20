@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+/* Always-light theme */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  color-scheme: light; /* keep form controls/light scrollbars */
+}
+
+/* (removed the prefers-color-scheme: dark block) */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}

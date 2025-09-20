@@ -1,0 +1,226 @@
+{
+  "data": [
+    {
+      "name": "Dr. Sheak Rashed Haider Noori (SRH)",
+      "initial": "SRH",
+      "designation": "Professor & Head",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "205KT",
+      "dayOff": "Saturday"
+    },
+    {
+      "name": "Dr. S.M Aminul Haque (SMAH)",
+      "initial": "SMAH",
+      "designation": "Professor & Associate Head",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "316KT",
+      "dayOff": "Thursday"
+    },
+    {
+      "name": "Dr. Arif Mahmud(AM)",
+      "initial": "AM",
+      "designation": "Associate Professor & Associate Head",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "205KT",
+      "dayOff": "Monday"
+    },
+    {
+      "name": "Dr. Md. Fokhray Hossain (MFH)",
+      "initial": "MFH",
+      "designation": "Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "316KT",
+      "dayOff": "Saturday"
+    },
+    {
+      "name": "Professor Dr. Md. Adnan Kiber(MAK)",
+      "initial": "MAK",
+      "designation": "Professor and Advisor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "205KT",
+      "dayOff": "Saturday"
+    },
+    {
+      "name": "Professor Dr. Fernaz Narin Nur",
+      "initial": "FNN",
+      "designation": "Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "316KT",
+      "dayOff": "Saturday"
+    },
+    {
+      "name": "Dr. Md. Zahid Hasan (ZH)",
+      "initial": "ZH",
+      "designation": "Associate Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "205KT",
+      "dayOff": "Saturday"
+    },
+    {
+      "name": "Ms. Nazmun Nessa Moon (NNM)",
+      "initial": "NNM",
+      "designation": "Associate Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "316KT",
+      "dayOff": "Thursday"
+    },
+    {
+      "name": "Dr. Fizar Ahmed (FZA)",
+      "initial": "FZA",
+      "designation": "Associate Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "205KT",
+      "dayOff": "Thursday"
+    },
+    {
+      "name": "Dr. Naznin Sultana (NS)",
+      "initial": "NS",
+      "designation": "Associate Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "316KT",
+      "dayOff": "Saturday"
+    },
+    {
+      "name": "Dr. Md. Kamrul Hossain (MKH)",
+      "initial": "MKH",
+      "designation": "Associate Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "205KT",
+      "dayOff": "Thursday"
+    },
+    {
+      "name": "Dr. Md. Sohidul Islam (MSI)",
+      "initial": "MSI",
+      "designation": "Associate Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "316KT",
+      "dayOff": "Monday"
+    },
+    {
+      "name": "Dr. Mr. Abdus Sattar(AS)",
+      "initial": "AS",
+      "designation": "Associate Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "205KT",
+      "dayOff": "Saturday"
+    },
+    {
+      "name": "Mr. Anuz Kumar Chakrabarty (AKC)",
+      "initial": "AKC",
+      "designation": "Associate Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "316KT",
+      "dayOff": "Saturday"
+    },
+    {
+      "name": "Dr. Md. Ali Hossain (MAH)",
+      "initial": "MAH",
+      "designation": "Associate Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "205KT",
+      "dayOff": "Saturday"
+    },
+    {
+      "name": "Dr. Md. Akhtaruzzaman",
+      "initial": "",
+      "designation": "Associate Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "316KT",
+      "dayOff": "Saturday"
+    },
+    {
+      "name": "Dr. Mohammad Nuruzzaman Bhuiyan",
+      "initial": "MNB",
+      "designation": "Associate Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "205KT",
+      "dayOff": "Thursday"
+    },
+    {
+      "name": "Mohammad Salek Parvez (SP)",
+      "initial": "SP",
+      "designation": "Assistant Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "316KT",
+      "dayOff": "Thursday"
+    },
+    {
+      "name": "Mr. Md. Sadekur Rahman (SR)",
+      "initial": "SR",
+      "designation": "Assistant Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "205KT",
+      "dayOff": "Saturday"
+    },
+    {
+      "name": "Mr. Shah Md Tanvir Siddiquee (SMTS)",
+      "initial": "SMTS",
+      "designation": "Assistant Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "316KT",
+      "dayOff": "Thursday"
+    },
+    {
+      "name": "Most. Hasna Hena (HH)",
+      "initial": "HH",
+      "designation": "Assistant Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "205KT",
+      "dayOff": "Monday"
+    },
+    {
+      "name": "Raja Tariqul Hasan Tusher(THT)",
+      "initial": "THT",
+      "designation": "Assistant Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "316KT",
+      "dayOff": "Saturday"
+    },
+    {
+      "name": "Md. Abbas Ali Khan(AAK)",
+      "initial": "AAK",
+      "designation": "Assistant Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "205KT",
+      "dayOff": "Saturday"
+    },
+    {
+      "name": "Ms. Samia Nawshin (SN)",
+      "initial": "SN",
+      "designation": "Assistant Professor",
+      "mobile": "123456778910",
+      "email": "test1.cse@diu.edu.bd",
+      "officeDesk": "316KT",
+      "dayOff": "Saturday"
+    }
+  ],
+  "meta": {
+    "routineFile": "Main Class Routine Final Version Summer 2025.xlsx",
+    "tifFile": "TIF.xlsx",
+    "at": "2025-09-20T00:40:52.462Z"
+  },
+  "at": "2025-09-20T00:40:52.462Z"
+}
